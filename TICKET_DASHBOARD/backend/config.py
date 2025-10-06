@@ -9,11 +9,12 @@ DOTENV_PATH = Path(__file__).resolve().parent / ".env"
 load_dotenv(DOTENV_PATH)
 
 class Settings(BaseSettings):
-    DATABASE_URL: str = os.getenv("DATABASE_URL") or "sqlite+aiosqlite:///./ticket_dashboard.db"
+    DATABASE_URL: str = os.getenv("DATABASE_URL") or "mongodb://localhost:27017"
+    MONGO_DB_NAME: str = os.getenv("MONGO_DB_NAME") or "ticket_dashboard"
 
     SUPER_TOGGLE_PWD: str = os.getenv("SUPER_TOGGLE_PWD") or "admin123"
     
-    JWT_SECRET: str = os.getenv("JWT_SECRET") or "ace0aa5846be09c3e5270d9b7aee4c0e"
+    JWT_SECRET: str = os.getenv("JWT_SECRET") or ""
     JWT_ALG: str = "HS256"
     JWT_TTL_SECONDS: int = 60 * 60 * 24 * 7  #7 days
 

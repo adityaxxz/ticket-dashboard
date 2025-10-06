@@ -3,10 +3,8 @@ from fastapi.security import APIKeyHeader
 import time
 import secrets
 from typing import Dict, Optional
-from sqlmodel import Session, select
 import jwt
-from .db import get_session
-from .models import User
+from .db import get_database, get_next_sequence, utc_now
 from .config import Config
 from .schemas import OTPRequest, OTPVerify
 from .mail import send_otp_email
@@ -14,7 +12,7 @@ from .mail import send_otp_email
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
-# In-memory OTP store
+# In-memory OTP store - key (email), value (tuple[otp, exp time])
 otp_store: Dict[str, tuple[str, float]] = {}
 
 
@@ -35,26 +33,26 @@ async def request_otp(data: OTPRequest):
 
 
 @router.post("/verify-otp")
-def verify_otp(data: OTPVerify, session: Session = Depends(get_session)):
+def verify_otp(data: OTPVerify, db = Depends(get_database)):
     email = data.email
     stored_otp = otp_store.get(email)
     
     if not stored_otp or stored_otp[1] < time.time() or stored_otp[0] != data.code:
         raise HTTPException(status_code=400, detail="Invalid or expired OTP")
-
-    user = session.exec(select(User).where(User.email == email)).first()
+        
+    users = db["users"]
+    user = users.find_one({"email": email})
     if not user:
-        user = User(email=email)
-        session.add(user)
-        session.commit()
-        session.refresh(user)
+        new_id = get_next_sequence(db, "users")
+        users.insert_one({"id": new_id, "email": email, "created_at": utc_now()})
+        user = users.find_one({"id": new_id})
 
     issued = int(time.time())
     expires = issued + Config.JWT_TTL_SECONDS
-    payload = {"sub": str(user.id), "iat": issued, "exp": expires}
+    payload = {"sub": str(int(user["id"])), "iat": issued, "exp": expires}
     token = jwt.encode(payload, Config.JWT_SECRET, algorithm=Config.JWT_ALG)
     
-    return {"token": token, "user_id": user.id}
+    return {"token": token, "user_id": int(user["id"]) }
 
 
 
@@ -62,7 +60,7 @@ def verify_otp(data: OTPVerify, session: Session = Depends(get_session)):
 
 def get_current_user(
     authorization: Optional[str] = Security(APIKeyHeader(name="Authorization", auto_error=False)),
-    session: Session = Depends(get_session),
+    db = Depends(get_database),
 ):
     try:
         raw = (authorization or "").strip()
@@ -72,7 +70,7 @@ def get_current_user(
     except Exception:
         raise HTTPException(status_code=401, detail="Invalid token")
 
-    user = session.get(User, user_id)
+    user = db["users"].find_one({"id": user_id})
 
     if not user:
         raise HTTPException(status_code=401, detail="User not found")
@@ -82,10 +80,10 @@ def get_current_user(
 
 
 @router.get("/me")
-def me(user: User = Depends(get_current_user)):
+def me(user = Depends(get_current_user)):
     return {
-        "id": user.id,
-        "email": user.email,
-        "created_at": user.created_at.isoformat(),
+        "id": int(user["id"]),
+        "email": user["email"],
+        "created_at": user.get("created_at"),
     }
 

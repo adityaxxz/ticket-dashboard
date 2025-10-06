@@ -1,3 +1,4 @@
+"""
 from datetime import datetime, timezone
 from typing import Optional
 
@@ -67,3 +68,4 @@ class SuperToggle(SQLModel, table=True):
 
     def __repr__(self) -> str:
         return f"<SuperToggle {self.enabled}>"
+"""
