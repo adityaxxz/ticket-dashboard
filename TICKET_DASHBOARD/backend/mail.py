@@ -43,3 +43,6 @@ async def send_otp_email(email: str, code: str):
     )
     await send_html_email([email], subject, body)
 
+
+async def send_activity_email(recipients: List[str], subject: str, body: str):
+    await send_html_email(recipients, subject, body)

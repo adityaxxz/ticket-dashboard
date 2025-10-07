@@ -5,6 +5,16 @@ from .db import get_database, get_next_sequence, utc_now
 from .config import Config
 from .schemas import ProjectCreate, TicketCreate, TicketUpdate, SuperToggleRequest
 from fastapi.responses import JSONResponse
+from .notifications import WebSocketNotification, EmailNotification, CompositeNotification
+
+
+def notify_activity(db, project_id: int, message: str, actor_email: str, ticket_id: int | None = None) -> None:
+    # Use a simple composite strategy: WebSocket + Email
+    notifier = CompositeNotification([
+        WebSocketNotification(),
+        EmailNotification(),
+    ])
+    notifier.send(db, project_id=int(project_id), message=message, actor_email=actor_email, ticket_id=ticket_id)
 
 router = APIRouter(prefix="/api", tags=["api"])
 
@@ -24,12 +34,24 @@ def create_project(data: ProjectCreate, user = Depends(get_current_user), db = D
         projects.insert_one(project)
         
         # Add activity log
-        db["activities"].insert_one({
+        activity = {
             "project_id": new_id,
             "message": f"Project created: {data.name}",
             "actor_email": user["email"],
             "created_at": utc_now()
+        }
+        db["activities"].insert_one(activity.copy())
+
+        # Visit log
+        db["user_visits"].insert_one({
+            "user_id": int(user["id"]),
+            "project_id": int(new_id),
+            "source": "api_create_project",
+            "visited_at": utc_now(),
         })
+
+        # Notify
+        notify_activity(db, project_id=int(new_id), message=activity["message"], actor_email=user["email"]) 
         
         return JSONResponse(status_code=201, content=jsonable_encoder({
             "message": "Project created",
@@ -82,13 +104,25 @@ def create_ticket(data: TicketCreate, user = Depends(get_current_user), db = Dep
         db["tickets"].insert_one(ticket.copy())
         
         # Add activity log
-        db["activities"].insert_one({
+        activity = {
             "project_id": data.project_id,
             "ticket_id": new_id,
             "message": "Ticket Raised",
             "actor_email": user["email"],
             "created_at": utc_now(),
+        }
+        db["activities"].insert_one(activity.copy())
+
+        # Visit log
+        db["user_visits"].insert_one({
+            "user_id": int(user["id"]),
+            "project_id": int(data.project_id),
+            "source": "api_create_ticket",
+            "visited_at": utc_now(),
         })
+
+        # Notify
+        notify_activity(db, project_id=int(data.project_id), message=activity["message"], actor_email=user["email"], ticket_id=int(new_id))
 
         return JSONResponse(
             status_code=201,
@@ -127,13 +161,25 @@ def update_ticket(ticket_id: int, data: TicketUpdate, user = Depends(get_current
     )
     
     # Add activity log
-    db["activities"].insert_one({
+    activity = {
         "project_id": int(ticket["project_id"]),
         "ticket_id": ticket_id,
         "message": "Ticket Updated",
         "actor_email": user["email"],
         "created_at": utc_now(),
+    }
+    db["activities"].insert_one(activity.copy())
+
+    # Visit log
+    db["user_visits"].insert_one({
+        "user_id": int(user["id"]),
+        "project_id": int(ticket["project_id"]),
+        "source": "api_update_ticket",
+        "visited_at": utc_now(),
     })
+
+    # Notify
+    notify_activity(db, project_id=int(ticket["project_id"]), message=activity["message"], actor_email=user["email"], ticket_id=int(ticket_id))
 
     ticket = db["tickets"].find_one({"id": ticket_id}, {"_id": 0})
 
@@ -154,6 +200,14 @@ def set_super_toggle(data: SuperToggleRequest, user = Depends(get_current_user),
     else:
         db["super_toggle"].update_one({}, {"$set": {"enabled": data.enable}, "$currentDate": {"updated_at": True}})
         enabled = data.enable
+
+    # Visit log
+    db["user_visits"].insert_one({
+        "user_id": int(user["id"]),
+        "project_id": None,
+        "source": "api_super_toggle",
+        "visited_at": utc_now(),
+    })
     return {"enabled": bool(enabled)}
 
 
@@ -161,5 +215,34 @@ def set_super_toggle(data: SuperToggleRequest, user = Depends(get_current_user),
 def get_super_toggle(db = Depends(get_database)):
     toggle = db["super_toggle"].find_one({}, {"_id": 0}) or {}
     return {"enabled": bool(toggle.get("enabled", False))}
+
+
+# Activities listing endpoints
+@router.get("/activities")
+def list_activities(limit: int = 50, db = Depends(get_database), user = Depends(get_current_user)):
+    # Log visit
+    db["user_visits"].insert_one({
+        "user_id": int(user["id"]),
+        "project_id": None,
+        "source": "api_list_activities",
+        "visited_at": utc_now(),
+    })
+    items = list(db["activities"].find({}, {"_id": 0}).sort("created_at", -1).limit(int(limit)))
+    return items
+
+
+@router.get("/projects/{project_id}/activities")
+def list_project_activities(project_id: int, limit: int = 50, db = Depends(get_database), user = Depends(get_current_user)):
+    # Log visit
+    db["user_visits"].insert_one({
+        "user_id": int(user["id"]),
+        "project_id": int(project_id),
+        "source": "api_list_project_activities",
+        "visited_at": utc_now(),
+    })
+    items = list(
+        db["activities"].find({"project_id": int(project_id)}, {"_id": 0}).sort("created_at", -1).limit(int(limit))
+    )
+    return items
 
 
