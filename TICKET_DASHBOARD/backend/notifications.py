@@ -12,22 +12,26 @@ class NotificationStrategy:
 
 
 class WebSocketNotification(NotificationStrategy):
+    
     async def async_broadcast_fn(self, data: dict) -> None:
         message = json.dumps({"event": "activity", "data": data})
         await broadcast(message)
 
     def send(self, db, project_id: int, message: str, actor_email: str, ticket_id: Optional[int] = None) -> None:
         data: dict = {"project_id": int(project_id), "message": message}
+        
         if ticket_id is not None:
             data["ticket_id"] = int(ticket_id)
 
         try:
             anyio.from_thread.run(self.async_broadcast_fn, data)
+
         except Exception:
             pass
 
 
 class EmailNotification(NotificationStrategy):
+
     def find_recent_user_ids(self, db, project_id: int) -> List[int]:
         pipeline = [
             {"$match": {"project_id": int(project_id)}},
@@ -45,24 +49,27 @@ class EmailNotification(NotificationStrategy):
 
             users = list(db["users"].find({"id": {"$in": user_ids}}, {"_id": 0}))
             online = get_online_user_ids()
-            recipients = [
-                u["email"]
-                for u in users
-                if int(u.get("id")) not in online and u.get("email") and u.get("email") != actor_email
-            ]
+            recipients = []
+
+            for user in users:
+                user_id = user.get("id")
+                user_email = user.get("email")
+                #if user has id, user is offline, has a valid mail, not the actor, then add
+                if user_id is not None and int(user_id) not in online and user_email and user_email != actor_email:
+                    recipients.append(user_email)
 
             if recipients:
                 subject = f"Activity on Project #{int(project_id)}"
                 body = f"<p>{message}</p>"
-                try:
-                    anyio.from_thread.run(send_activity_email, recipients, subject, body)
-                except Exception:
-                    pass
+
+                anyio.from_thread.run(send_activity_email, recipients, subject, body)
+
         except Exception:
             pass
 
 # if websocket fails, continue with email
 class CompositeNotification(NotificationStrategy):
+
     def __init__(self, strategies: List[NotificationStrategy]):
         self.strategies = strategies
 

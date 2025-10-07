@@ -6,6 +6,7 @@ from .config import Config
 from .schemas import ProjectCreate, TicketCreate, TicketUpdate, SuperToggleRequest
 from fastapi.responses import JSONResponse
 from .notifications import WebSocketNotification, EmailNotification, CompositeNotification
+from .ws import log_user_visit
 
 
 def notify_activity(db, project_id: int, message: str, actor_email: str, ticket_id: int | None = None) -> None:
@@ -40,15 +41,11 @@ def create_project(data: ProjectCreate, user = Depends(get_current_user), db = D
             "actor_email": user["email"],
             "created_at": utc_now()
         }
+        
         db["activities"].insert_one(activity.copy())
 
         # Visit log
-        db["user_visits"].insert_one({
-            "user_id": int(user["id"]),
-            "project_id": int(new_id),
-            "source": "api_create_project",
-            "visited_at": utc_now(),
-        })
+        log_user_visit(int(user["id"]), str(new_id), "api_create_project")
 
         # Notify
         notify_activity(db, project_id=int(new_id), message=activity["message"], actor_email=user["email"]) 
@@ -114,12 +111,7 @@ def create_ticket(data: TicketCreate, user = Depends(get_current_user), db = Dep
         db["activities"].insert_one(activity.copy())
 
         # Visit log
-        db["user_visits"].insert_one({
-            "user_id": int(user["id"]),
-            "project_id": int(data.project_id),
-            "source": "api_create_ticket",
-            "visited_at": utc_now(),
-        })
+        log_user_visit(int(user["id"]), str(data.project_id), "api_create_ticket")
 
         # Notify
         notify_activity(db, project_id=int(data.project_id), message=activity["message"], actor_email=user["email"], ticket_id=int(new_id))
@@ -148,9 +140,11 @@ def update_ticket(ticket_id: int, data: TicketUpdate, user = Depends(get_current
     update_fields = {}
     if data.description is not None:
         update_fields["description"] = data.description
-        
+    
+    valid_status = ["todo", "deployed", "done", "inprogress","proposed"]
+
     if data.status is not None:
-        if data.status not in {"todo", "doing", "done"}:
+        if data.status not in valid_status:
             raise HTTPException(status_code=400, detail="Invalid status")
         update_fields["status"] = data.status
     
@@ -171,12 +165,7 @@ def update_ticket(ticket_id: int, data: TicketUpdate, user = Depends(get_current
     db["activities"].insert_one(activity.copy())
 
     # Visit log
-    db["user_visits"].insert_one({
-        "user_id": int(user["id"]),
-        "project_id": int(ticket["project_id"]),
-        "source": "api_update_ticket",
-        "visited_at": utc_now(),
-    })
+    log_user_visit(int(user["id"]), str(ticket["project_id"]), "api_update_ticket")
 
     # Notify
     notify_activity(db, project_id=int(ticket["project_id"]), message=activity["message"], actor_email=user["email"], ticket_id=int(ticket_id))
@@ -202,12 +191,7 @@ def set_super_toggle(data: SuperToggleRequest, user = Depends(get_current_user),
         enabled = data.enable
 
     # Visit log
-    db["user_visits"].insert_one({
-        "user_id": int(user["id"]),
-        "project_id": None,
-        "source": "api_super_toggle",
-        "visited_at": utc_now(),
-    })
+    log_user_visit(int(user["id"]), None, "api_super_toggle")
     return {"enabled": bool(enabled)}
 
 
@@ -221,12 +205,7 @@ def get_super_toggle(db = Depends(get_database)):
 @router.get("/activities")
 def list_activities(limit: int = 50, db = Depends(get_database), user = Depends(get_current_user)):
     # Log visit
-    db["user_visits"].insert_one({
-        "user_id": int(user["id"]),
-        "project_id": None,
-        "source": "api_list_activities",
-        "visited_at": utc_now(),
-    })
+    log_user_visit(int(user["id"]), None, "api_list_activities")
     items = list(db["activities"].find({}, {"_id": 0}).sort("created_at", -1).limit(int(limit)))
     return items
 
@@ -234,12 +213,7 @@ def list_activities(limit: int = 50, db = Depends(get_database), user = Depends(
 @router.get("/projects/{project_id}/activities")
 def list_project_activities(project_id: int, limit: int = 50, db = Depends(get_database), user = Depends(get_current_user)):
     # Log visit
-    db["user_visits"].insert_one({
-        "user_id": int(user["id"]),
-        "project_id": int(project_id),
-        "source": "api_list_project_activities",
-        "visited_at": utc_now(),
-    })
+    log_user_visit(int(user["id"]), str(project_id), "api_list_project_activities")
     items = list(
         db["activities"].find({"project_id": int(project_id)}, {"_id": 0}).sort("created_at", -1).limit(int(limit))
     )

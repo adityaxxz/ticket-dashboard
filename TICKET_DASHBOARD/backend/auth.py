@@ -8,7 +8,7 @@ from .db import get_database, get_next_sequence, utc_now
 from .config import Config
 from .schemas import OTPRequest, OTPVerify
 from .mail import send_otp_email
-
+from .ws import log_user_visit
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -49,16 +49,7 @@ def verify_otp(data: OTPVerify, db = Depends(get_database)):
     token = jwt.encode(payload, Config.JWT_SECRET, algorithm=Config.JWT_ALG)
     
     # Log visit on login
-    try:
-        db["user_visits"].insert_one({
-            "user_id": int(user["id"]),
-            "project_id": None,
-            "source": "auth_verify_otp",
-            "visited_at": utc_now(),
-        })
-        
-    except Exception:
-        pass
+    log_user_visit(int(user["id"]), None, "auth_verify_otp")
 
     return {"token": token, "user_id": int(user["id"]) }
 
