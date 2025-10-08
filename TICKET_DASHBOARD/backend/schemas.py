@@ -38,7 +38,7 @@ class TicketCreate(BaseModel):
 
 class TicketUpdate(BaseModel):
     description: Optional[str] = Field(default=None, description="description of the ticket")
-    status: Optional[str] = Field(default="todo", description="status of the ticket")
+    status: Optional[str] = Field(default="proposed", description="status of the ticket")
 
 
 class SuperToggleRequest(BaseModel):

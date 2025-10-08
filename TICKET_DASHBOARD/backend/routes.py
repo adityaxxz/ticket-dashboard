@@ -203,7 +203,7 @@ def get_super_toggle(db = Depends(get_database)):
 
 # Activities listing endpoints
 @router.get("/activities")
-def list_activities(limit: int = 50, db = Depends(get_database), user = Depends(get_current_user)):
+def list_activities(limit: int = 20, db = Depends(get_database), user = Depends(get_current_user)):
     # Log visit
     log_user_visit(int(user["id"]), None, "api_list_activities")
     items = list(db["activities"].find({}, {"_id": 0}).sort("created_at", -1).limit(int(limit)))
@@ -211,7 +211,7 @@ def list_activities(limit: int = 50, db = Depends(get_database), user = Depends(
 
 
 @router.get("/projects/{project_id}/activities")
-def list_project_activities(project_id: int, limit: int = 50, db = Depends(get_database), user = Depends(get_current_user)):
+def list_project_activities(project_id: int, limit: int = 20, db = Depends(get_database), user = Depends(get_current_user)):
     # Log visit
     log_user_visit(int(user["id"]), str(project_id), "api_list_project_activities")
     items = list(

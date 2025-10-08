@@ -20,7 +20,7 @@ otp_store: Dict[str, tuple[str, float]] = {}
 @router.post("/request-otp")
 async def request_otp(data: OTPRequest, bg_tasks: BackgroundTasks):
     email = data.email
-    code = secrets.token_hex(3)
+    code = str(secrets.randbelow(900000) + 100000)
     otp_store[email] = (code, time.time() + 300)  # expiry in 5mins
     
     bg_tasks.add_task(send_otp_email, email, code)
@@ -55,6 +55,7 @@ def verify_otp(data: OTPVerify, db = Depends(get_database)):
 
 
 
+
 #dependencies for the endpoints
 
 def get_current_user(authorization: Optional[str] = Security(APIKeyHeader(name="Authorization", auto_error=False)),db = Depends(get_database)):
@@ -83,4 +84,5 @@ def me(user = Depends(get_current_user)):
         "email": user["email"],
         "created_at": user.get("created_at"),
     }
+
 
