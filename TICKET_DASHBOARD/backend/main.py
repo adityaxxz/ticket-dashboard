@@ -28,10 +28,3 @@ app.add_middleware(
 app.include_router(auth_router)
 app.include_router(api_router)
 app.include_router(ws_router)
-
-
-async def emit_activity(event: str, payload: dict):
-    message = json.dumps({"event": event, "data": payload})
-    await broadcast(message)
-
-

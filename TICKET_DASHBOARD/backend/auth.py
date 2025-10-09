@@ -2,29 +2,26 @@ from fastapi import APIRouter, Depends, HTTPException, Security, BackgroundTasks
 from fastapi.security import APIKeyHeader
 import time
 import secrets
-from typing import Dict, Optional
 import jwt
 from .db import get_database, get_next_sequence, utc_now
 from .config import Config
 from .schemas import OTPRequest, OTPVerify
 from .mail import send_otp_email
-from .ws import log_user_visit
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
-# In-memory OTP store - key (email), value (tuple[otp, exp time])
-otp_store: Dict[str, tuple[str, float]] = {}
-
+otp_store = {}
 
 
 @router.post("/request-otp")
 async def request_otp(data: OTPRequest, bg_tasks: BackgroundTasks):
-    email = data.email
     code = str(secrets.randbelow(900000) + 100000)
-    otp_store[email] = (code, time.time() + 300)  # expiry in 5mins
+    otp_store[data.email] = {
+        'code': code, 
+        'expires_at': time.time() + 300  # 5 minutes
+    }
     
-    bg_tasks.add_task(send_otp_email, email, code)
-
+    bg_tasks.add_task(send_otp_email, data.email, code)
     return {"message": "Login thru OTP, sent to email"}
 
 
@@ -33,56 +30,57 @@ def verify_otp(data: OTPVerify, db = Depends(get_database)):
     email = data.email
     stored_otp = otp_store.get(email)
     
-    if not stored_otp or stored_otp[1] < time.time() or stored_otp[0] != data.code:
+    if not stored_otp or stored_otp['expires_at'] < time.time() or stored_otp['code'] != data.code:
         raise HTTPException(status_code=400, detail="Invalid or expired OTP")
+    
+    del otp_store[data.email]
         
-    users = db["users"]
-    user = users.find_one({"email": email})
+    user = db["users"].find_one({"email": data.email})
     if not user:
         new_id = get_next_sequence(db, "users")
-        users.insert_one({"id": new_id, "email": email, "created_at": utc_now()})
-        user = users.find_one({"id": new_id})
+        db["users"].insert_one({"id": new_id, "email": data.email, "created_at": utc_now()})
+        user = db["users"].find_one({"id": new_id})
 
-    issued = int(time.time())
-    expires = issued + Config.JWT_TTL_SECONDS
-    payload = {"sub": str(int(user["id"])), "iat": issued, "exp": expires}
+    payload = {
+        "sub": str(user["id"]), 
+        "iat": int(time.time()), 
+        "exp": int(time.time()) + Config.JWT_TTL_SECONDS
+    }
     token = jwt.encode(payload, Config.JWT_SECRET, algorithm=Config.JWT_ALG)
-    
-    # Log visit on login
-    log_user_visit(int(user["id"]), None, "auth_verify_otp")
 
-    return {"token": token, "user_id": int(user["id"]) }
+    return {"token": token, "user_id": user["id"]}
 
 
 
 
-#dependencies for the endpoints
+# Authentication dependency
 
-def get_current_user(authorization: Optional[str] = Security(APIKeyHeader(name="Authorization", auto_error=False)),db = Depends(get_database)):
+def get_current_user(authorization = Security(APIKeyHeader(name="Authorization")), db = Depends(get_database)):
+    """Simple authentication - expects 'Bearer <token>' format"""
     try:
-        raw = (authorization or "").strip()
-    # TODO no bearer jst token
-        token = raw.split(" ", 1)[1] if raw.lower().startswith("bearer ") else raw
-        user_id = int(jwt.decode(token, Config.JWT_SECRET, algorithms=[Config.JWT_ALG]).get("sub"))
+        if not authorization or not authorization.startswith("Bearer "):
+            raise HTTPException(status_code=401, detail="Missing or invalid authorization header")
+        
+        token = authorization.split(" ")[1]
+        payload = jwt.decode(token, Config.JWT_SECRET, algorithms=[Config.JWT_ALG])
+        user_id = int(payload.get("sub"))
 
+    except (jwt.ExpiredSignatureError, jwt.InvalidTokenError):
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
     except Exception:
-        raise HTTPException(status_code=401, detail="Invalid token")
+        raise HTTPException(status_code=401, detail="Authentication failed")
 
     user = db["users"].find_one({"id": user_id})
-
     if not user:
         raise HTTPException(status_code=401, detail="User not found")
 
     return user
 
 
-
 @router.get("/me")
-def me(user = Depends(get_current_user)):
+def get_current_user_info(user = Depends(get_current_user)):
     return {
-        "id": int(user["id"]),
+        "id": user["id"],
         "email": user["email"],
         "created_at": user.get("created_at"),
     }
-
-

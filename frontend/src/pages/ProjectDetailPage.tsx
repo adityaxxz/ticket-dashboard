@@ -16,6 +16,7 @@ export default function ProjectDetailPage() {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // Track connection implicitly; do not store state to avoid unused warnings
 
   useEffect(() => {
     if (projectId) {
@@ -40,6 +41,35 @@ export default function ProjectDetailPage() {
       setIsLoading(false);
     }
   };
+
+  // Simple WebSocket: connect and listen for activity updates
+  useEffect(() => {
+    if (!projectId) return;
+
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    // Simple WebSocket connection
+    const wsUrl = `ws://localhost:8000/ws/activity?token=${token}&project_id=${projectId}`;
+    const ws = new WebSocket(wsUrl);
+
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.event === 'activity' && data.data?.project_id == projectId) {
+          // Simple refresh without debouncing - WebSocket messages are already infrequent
+          fetchProjectDetails();
+        }
+      } catch {
+        // Ignore parse errors
+      }
+    };
+
+    // Simple cleanup
+    return () => {
+      ws.close();
+    };
+  }, [projectId]);
 
   const handleTicketCreate = async (ticketData: TicketCreate): Promise<Ticket> => {
     try {
@@ -68,9 +98,7 @@ export default function ProjectDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="flex justify-center py-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
-      </div>
+      <div className="flex justify-center py-8 text-gray-700">Loading...</div>
     );
   }
 

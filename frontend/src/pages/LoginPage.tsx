@@ -66,11 +66,7 @@ export default function LoginPage() {
                 />
               </div>
 
-              {error && (
-                <div className="p-3 bg-red-100 border border-red-400 text-red-700 rounded">
-                  {error}
-                </div>
-              )}
+      {error && <div className="p-3 bg-red-100 border border-red-400 text-red-700 rounded">{error}</div>}
 
               <button
                 type="submit"
@@ -102,11 +98,7 @@ export default function LoginPage() {
                 </p>
               </div>
 
-              {error && (
-                <div className="p-3 bg-red-100 border border-red-400 text-red-700 rounded">
-                  {error}
-                </div>
-              )}
+      {error && <div className="p-3 bg-red-100 border border-red-400 text-red-700 rounded">{error}</div>}
 
               <div className="flex space-x-3">
                 <button

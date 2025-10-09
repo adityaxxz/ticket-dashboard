@@ -1,4 +1,5 @@
-// API Response Types
+// ===== CORE TYPES =====
+
 export interface User {
   id: number;
   email: string;
@@ -9,8 +10,6 @@ export interface Project {
   id: number;
   name: string;
   created_at: string;
-  created_by_id?: number;
-  created_by_email?: string;
 }
 
 export interface Ticket {
@@ -19,11 +18,12 @@ export interface Ticket {
   description: string;
   status: 'todo' | 'inprogress' | 'deployed' | 'done' | 'proposed';
   creator_id: number;
-  creator_email?: string; 
+  creator_email?: string;
   updated_by_id: number;
-  updated_by_email?: string; 
+  updated_by_email?: string;
   created_at: string;
   updated_at: string;
+  actor_email?: string;
 }
 
 export interface Activity {
@@ -35,11 +35,8 @@ export interface Activity {
   created_at: string;
 }
 
-export interface SuperToggle {
-  enabled: boolean;
-}
+// ===== API REQUEST/RESPONSE TYPES =====
 
-// API Request Types
 export interface OTPRequest {
   email: string;
 }
@@ -60,7 +57,7 @@ export interface TicketCreate {
 
 export interface TicketUpdate {
   description?: string;
-  status?: 'todo' | 'inprogress' | 'deployed' | 'done' | 'proposed';
+  status?: Ticket['status'];
 }
 
 export interface SuperToggleRequest {
@@ -68,7 +65,8 @@ export interface SuperToggleRequest {
   password: string;
 }
 
-// API Response Wrappers
+// ===== API RESPONSES =====
+
 export interface AuthResponse {
   token: string;
   user_id: number;
@@ -79,12 +77,6 @@ export interface ProjectResponse {
   tickets: Ticket[];
 }
 
-export interface ApiResponse<T> {
-  message: string;
-  data?: T;
-}
-
-// Error Response
-export interface ApiError {
-  detail: string;
+export interface SuperToggle {
+  enabled: boolean;
 }

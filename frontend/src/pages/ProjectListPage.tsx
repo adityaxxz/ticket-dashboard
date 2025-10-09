@@ -1,32 +1,26 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useProjects } from '../contexts/ProjectContext';
-import type { ProjectFormData } from '../types';
+// Removed ProjectFormData - using inline type instead
 
 export default function ProjectListPage() {
   const { projects, fetchProjects, createProject, isLoading } = useProjects();
   const navigate = useNavigate();
   const [showCreateForm, setShowCreateForm] = useState(false);
-  const [formData, setFormData] = useState<ProjectFormData>({ name: '' });
+  const [formData, setFormData] = useState({ name: '' });
   const [isCreating, setIsCreating] = useState(false);
 
   useEffect(() => {
     fetchProjects();
-  }, [fetchProjects]);
+  }, []); // Only run on mount - simpler for beginners
 
   const handleCreateProject = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsCreating(true);
-
-    try {
-      await createProject(formData);
-      setFormData({ name: '' });
-      setShowCreateForm(false);
-    } catch (error) {
-      console.error('Failed to create project:', error);
-    } finally {
-      setIsCreating(false);
-    }
+    await createProject(formData);
+    setFormData({ name: '' });
+    setShowCreateForm(false);
+    setIsCreating(false);
   };
 
   return (
@@ -81,12 +75,10 @@ export default function ProjectListPage() {
       )}
 
       {isLoading ? (
-        <div className="flex justify-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
-        </div>
+        <div className="flex justify-center py-8 text-gray-700">Loading...</div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {projects.map((project) => (
+          {projects.map((project: any) => (
             <div
               key={project.id}
               onClick={() => navigate(`/projects/${project.id}`)}
@@ -98,9 +90,6 @@ export default function ProjectListPage() {
               <p className="text-sm text-gray-500">
                 Created: {new Date(project.created_at).toLocaleDateString()}
               </p>
-              {/* <p className="text-sm text-gray-500">
-                Created by: {project.created_by_email ?? `User ${project.created_by_id}`}
-              </p> */}
             </div>
           ))}
         </div>

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useSuperToggle } from '../contexts/SuperToggleContext';
-import type { SuperToggleFormData } from '../types';
+// Removed SuperToggleFormData - using inline type instead
 
 interface SuperToggleModalProps {
   isOpen: boolean;
@@ -9,7 +9,7 @@ interface SuperToggleModalProps {
 
 export default function SuperToggleModal({ isOpen, onClose }: SuperToggleModalProps) {
   const { enabled, toggleSuperMode, isLoading } = useSuperToggle();
-  const [formData, setFormData] = useState<SuperToggleFormData>({ password: '' });
+  const [formData, setFormData] = useState({ password: '' });
   const [error, setError] = useState<string | null>(null);
 
   if (!isOpen) return null;

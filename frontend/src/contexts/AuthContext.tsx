@@ -1,8 +1,52 @@
-import React, { createContext, useContext, useReducer, useEffect } from 'react';
-import type { AuthState, User, OTPRequest, OTPVerify } from '../types';
-import { authAPI } from '../services/api';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import type { User, OTPRequest, OTPVerify } from '../types';
 
-interface AuthContextType extends AuthState {
+// Simple API functions - no complex axios client needed
+const API_BASE = 'http://localhost:8000';
+const getAuthHeaders = () => {
+  const token = localStorage.getItem('token');
+  return {
+    'Content-Type': 'application/json',
+    ...(token && { Authorization: `Bearer ${token}` })
+  };
+};
+
+const authAPI = {
+  requestOTP: async (data: OTPRequest) => {
+    const response = await fetch(`${API_BASE}/auth/request-otp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    if (!response.ok) throw new Error('Failed to send OTP');
+    return response.json();
+  },
+
+  verifyOTP: async (data: OTPVerify) => {
+    const response = await fetch(`${API_BASE}/auth/verify-otp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    if (!response.ok) throw new Error('Invalid OTP');
+    return response.json();
+  },
+
+  getMe: async () => {
+    const response = await fetch(`${API_BASE}/auth/me`, {
+      headers: getAuthHeaders()
+    });
+    if (!response.ok) throw new Error('Failed to get user info');
+    return response.json();
+  }
+};
+
+interface AuthContextType {
+  user: User | null;
+  token: string | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  error: string | null;
   requestOTP: (data: OTPRequest) => Promise<void>;
   verifyOTP: (data: OTPVerify) => Promise<void>;
   logout: () => void;
@@ -10,97 +54,79 @@ interface AuthContextType extends AuthState {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-type AuthAction =
-  | { type: 'SET_LOADING'; payload: boolean }
-  | { type: 'SET_USER'; payload: User | null }
-  | { type: 'SET_TOKEN'; payload: string | null }
-  | { type: 'SET_ERROR'; payload: string | null }
-  | { type: 'LOGOUT' };
-
-const storedToken = localStorage.getItem('token');
-
-const initialState: AuthState = {
-  user: null,
-  token: storedToken,
-  isAuthenticated: !!storedToken,
-  isLoading: !!storedToken,
-  error: null,
-};
-
-function authReducer(state: AuthState, action: AuthAction): AuthState {
-  switch (action.type) {
-    case 'SET_LOADING':
-      return { ...state, isLoading: action.payload };
-    case 'SET_USER':
-      return { ...state, user: action.payload, isAuthenticated: !!action.payload };
-    case 'SET_TOKEN':
-      return { ...state, token: action.payload };
-    case 'SET_ERROR':
-      return { ...state, error: action.payload };
-    case 'LOGOUT':
-      return { ...initialState, token: null };
-    default:
-      return state;
-  }
-}
-
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [state, dispatch] = useReducer(authReducer, initialState);
+  // Simple state hooks instead of complex reducer
+  const [user, setUser] = useState<User | null>(null);
+  const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
+  const [isLoading, setIsLoading] = useState(!!token); // Only load if we have a token
+  const [error, setError] = useState<string | null>(null);
+  const isAuthenticated = !!user;
 
+  // Simple effect to check existing token
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      // Begin loading while verifying token and fetching user
-      dispatch({ type: 'SET_LOADING', payload: true });
+    const storedToken = localStorage.getItem('token');
+    if (storedToken) {
+      setIsLoading(true);
       authAPI.getMe()
-        .then((user) => {
-          dispatch({ type: 'SET_USER', payload: user });
-          dispatch({ type: 'SET_TOKEN', payload: token });
-        })
-        .catch(() => {
-          // Do not auto-logout on transient failures; keep session and stop loading
-          dispatch({ type: 'SET_ERROR', payload: 'Failed to refresh session' });
-        })
-        .finally(() => {
-          dispatch({ type: 'SET_LOADING', payload: false });
-        });
+        .then(setUser)
+        .catch(() => setError('Failed to refresh session'))
+        .finally(() => setIsLoading(false));
     }
   }, []);
 
   const requestOTP = async (data: OTPRequest) => {
-    dispatch({ type: 'SET_LOADING', payload: true });
+    setIsLoading(true);
+    setError(null);
     try {
       await authAPI.requestOTP(data);
     } catch (error) {
-      dispatch({ type: 'SET_ERROR', payload: 'Failed to request OTP' });
+      setError('Failed to request OTP');
       throw error;
     } finally {
-      dispatch({ type: 'SET_LOADING', payload: false });
+      setIsLoading(false);
     }
   };
 
   const verifyOTP = async (data: OTPVerify) => {
-    dispatch({ type: 'SET_LOADING', payload: true });
+    setIsLoading(true);
+    setError(null);
     try {
       const response = await authAPI.verifyOTP(data);
-      localStorage.setItem('token', response.token);
-      dispatch({ type: 'SET_TOKEN', payload: response.token });
-      dispatch({ type: 'SET_USER', payload: { id: response.user_id, email: data.email, created_at: new Date().toISOString() } });
+      const newToken = response.token;
+      
+      localStorage.setItem('token', newToken);
+      setToken(newToken);
+      setUser({ 
+        id: response.user_id, 
+        email: data.email, 
+        created_at: new Date().toISOString() 
+      });
     } catch (error) {
-      dispatch({ type: 'SET_ERROR', payload: 'Invalid OTP' });
+      setError('Invalid OTP');
       throw error;
     } finally {
-      dispatch({ type: 'SET_LOADING', payload: false });
+      setIsLoading(false);
     }
   };
 
   const logout = () => {
     localStorage.removeItem('token');
-    dispatch({ type: 'LOGOUT' });
+    setToken(null);
+    setUser(null);
+    setError(null);
   };
 
   return (
-    <AuthContext.Provider value={{ ...state, requestOTP, verifyOTP, logout }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      token, 
+      isAuthenticated, 
+      isLoading, 
+      error, 
+      requestOTP, 
+      verifyOTP, 
+      logout 
+    }}>
       {children}
     </AuthContext.Provider>
   );

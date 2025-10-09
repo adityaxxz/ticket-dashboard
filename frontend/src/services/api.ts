@@ -1,188 +1,114 @@
-import axios from 'axios';
-import type { AxiosInstance, AxiosResponse } from 'axios';
-import type {
-  User,
-  Project,
-  Ticket,
-  Activity,
-  SuperToggle,
-  OTPRequest,
-  OTPVerify,
-  AuthResponse,
-  ProjectCreate,
-  ProjectResponse,
-  TicketCreate,
-  TicketUpdate,
-  SuperToggleRequest,
-} from '../types';
+const API_BASE = 'http://localhost:8000';
 
-const API_BASE_URL = 'http://localhost:8000';
-
-class ApiClient {
-  public client: AxiosInstance;
-
-  constructor() {
-    this.client = axios.create({
-      baseURL: API_BASE_URL,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    // Add request interceptor to include auth token
-    this.client.interceptors.request.use((config) => {
-      const token = localStorage.getItem('token');
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-      }
-      return config;
-    });
-
-    // Add response interceptor for error handling
-    this.client.interceptors.response.use(
-      (response) => response,
-      (error) => {
-        if (error.response?.status === 401) {
-          localStorage.removeItem('token');
-          window.location.href = '/login';
-        }
-        return Promise.reject(error);
-      }
-    );
-  }
-
-  public handleResponse<T>(response: AxiosResponse<T>): T {
-    return response.data;
-  }
-
-  public handleError(error: any): never {
-    if (error.response?.data?.detail) {
-      throw new Error(error.response.data.detail);
+const getHeaders = (includeAuth = true) => {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+  
+  if (includeAuth) {
+    const token = localStorage.getItem('token');
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
     }
-    throw new Error('An unexpected error occurred');
   }
-}
+  
+  return headers;
+};
 
-const apiClient = new ApiClient();
+const fetchAPI = async (url: string, options: RequestInit = {}) => {
+  const response = await fetch(`${API_BASE}${url}`, {
+    ...options,
+    headers: {
+      ...getHeaders(true),
+      ...options.headers,
+    },
+  });
 
-// Auth API
+  if (!response.ok) {
+    if (response.status === 401) {
+      localStorage.removeItem('token');
+      window.location.href = '/login';
+    }
+    const errorText = await response.text();
+    throw new Error(errorText || 'Request failed');
+  }
+
+  return response.json();
+};
+
+
 export const authAPI = {
-  requestOTP: async (data: OTPRequest): Promise<void> => {
-    try {
-      await apiClient.client.post('/auth/request-otp', data);
-    } catch (error) {
-      apiClient.handleError(error);
-    }
+  requestOTP: async (data: { email: string }) => {
+    return fetchAPI('/auth/request-otp', {
+      method: 'POST',
+      body: JSON.stringify(data),
+      headers: getHeaders(false),
+    });
   },
 
-  verifyOTP: async (data: OTPVerify): Promise<AuthResponse> => {
-    try {
-      const response = await apiClient.client.post('/auth/verify-otp', data);
-      return apiClient.handleResponse(response);
-    } catch (error) {
-      return apiClient.handleError(error);
-    }
+  verifyOTP: async (data: { email: string; code: string }) => {
+    return fetchAPI('/auth/verify-otp', {
+      method: 'POST',
+      body: JSON.stringify(data),
+      headers: getHeaders(false),
+    });
   },
 
-  getMe: async (): Promise<User> => {
-    try {
-      const response = await apiClient.client.get('/auth/me');
-      return apiClient.handleResponse(response);
-    } catch (error) {
-      return apiClient.handleError(error);
-    }
+  getMe: async () => {
+    return fetchAPI('/auth/me');
   },
 };
 
-// Project API
 export const projectAPI = {
-  getProjects: async (): Promise<Project[]> => {
-    try {
-      const response = await apiClient.client.get('/api/projects');
-      return apiClient.handleResponse(response);
-    } catch (error) {
-      return apiClient.handleError(error);
-    }
+  getProjects: async () => {
+    return fetchAPI('/api/projects');
   },
 
-  getProject: async (projectId: number): Promise<ProjectResponse> => {
-    try {
-      const response = await apiClient.client.get(`/api/projects/${projectId}`);
-      return apiClient.handleResponse(response);
-    } catch (error) {
-      return apiClient.handleError(error);
-    }
+  getProject: async (projectId: number) => {
+    return fetchAPI(`/api/projects/${projectId}`);
   },
 
-  createProject: async (data: ProjectCreate): Promise<Project> => {
-    try {
-      const response = await apiClient.client.post('/api/projects', data);
-      return response.data.project;
-    } catch (error) {
-      return apiClient.handleError(error);
-    }
+  createProject: async (data: { name: string }) => {
+    return fetchAPI('/api/projects', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
   },
 };
 
-// Ticket API
 export const ticketAPI = {
-  createTicket: async (data: TicketCreate): Promise<Ticket> => {
-    try {
-      const response = await apiClient.client.post('/api/tickets', data);
-      return response.data.ticket;
-    } catch (error) {
-      return apiClient.handleError(error);
-    }
+  createTicket: async (data: { project_id: number; description: string }) => {
+    return fetchAPI('/api/tickets', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
   },
 
-  updateTicket: async (ticketId: number, data: TicketUpdate): Promise<Ticket> => {
-    try {
-      const response = await apiClient.client.patch(`/api/tickets/${ticketId}`, data);
-      return apiClient.handleResponse(response);
-    } catch (error) {
-      return apiClient.handleError(error);
-    }
+  updateTicket: async (ticketId: number, data: { description?: string; status?: string }) => {
+    return fetchAPI(`/api/tickets/${ticketId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
   },
 };
 
-// Super Toggle API
 export const superToggleAPI = {
-  getSuperToggle: async (): Promise<SuperToggle> => {
-    try {
-      const response = await apiClient.client.get('/api/super-toggle');
-      return apiClient.handleResponse(response);
-    } catch (error) {
-      return apiClient.handleError(error);
-    }
+  getSuperToggle: async () => {
+    return fetchAPI('/api/super-toggle');
   },
 
-  setSuperToggle: async (data: SuperToggleRequest): Promise<SuperToggle> => {
-    try {
-      const response = await apiClient.client.post('/api/super-toggle', data);
-      return apiClient.handleResponse(response);
-    } catch (error) {
-      return apiClient.handleError(error);
-    }
+  setSuperToggle: async (data: { enable: boolean; password: string }) => {
+    return fetchAPI('/api/super-toggle', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
   },
 };
 
-// Notification API
 export const notificationAPI = {
-  getActivities: async (limit: number = 50): Promise<Activity[]> => {
-    try {
-      const response = await apiClient.client.get(`/api/activities?limit=${limit}`);
-      return apiClient.handleResponse(response);
-    } catch (error) {
-      return apiClient.handleError(error);
-    }
-  },
-
-  getProjectActivities: async (projectId: number, limit: number = 50): Promise<Activity[]> => {
-    try {
-      const response = await apiClient.client.get(`/api/projects/${projectId}/activities?limit=${limit}`);
-      return apiClient.handleResponse(response);
-    } catch (error) {
-      return apiClient.handleError(error);
-    }
+  getActivities: async (limit = 50) => {
+    return fetchAPI(`/api/activities?limit=${limit}`);
   },
 };
+
+export const API_BASE_URL = API_BASE;    //exposing the API base url for WebSocket usage

@@ -6,7 +6,7 @@ import SuperToggleModal from './SuperToggleModal.tsx';
 
 export default function Header() {
   const { user, logout } = useAuth();
-  const { unreadCount, notifications, isLoading, fetchNotifications, markAsRead } = useNotifications();
+  const { notifications, isLoading, fetchNotifications } = useNotifications();
   const { enabled: superModeEnabled } = useSuperToggle();
   const [showSuperToggle, setShowSuperToggle] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -18,7 +18,6 @@ export default function Header() {
     setIsDropdownOpen(next);
     if (next) {
       await fetchNotifications();
-      markAsRead();
     }
   };
 
@@ -47,11 +46,6 @@ export default function Header() {
             <h1 className="text-2xl font-bold text-gray-900">
               Ticket Dashboard
             </h1>
-            {superModeEnabled && (
-              <span className="bg-red-100 text-red-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
-                SUPER MODE
-              </span>
-            )}
           </div>
 
           <div className="flex items-center space-x-4">
@@ -62,11 +56,6 @@ export default function Header() {
                 className="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
               >
               <span role="img" aria-label="notifications" className="text-xl">🔔</span>
-              {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                  {unreadCount}
-                </span>
-              )}
               </button>
 
               {isDropdownOpen && (

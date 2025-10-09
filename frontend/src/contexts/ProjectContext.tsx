@@ -1,8 +1,12 @@
-import React, { createContext, useContext, useReducer, useCallback } from 'react';
-import type { ProjectState, Project, ProjectCreate } from '../types';
+import React, { createContext, useContext, useState } from 'react';
+import type { Project, ProjectCreate } from '../types';
 import { projectAPI } from '../services/api';
 
-interface ProjectContextType extends ProjectState {
+interface ProjectContextType {
+  projects: Project[];
+  currentProject: Project | null;
+  isLoading: boolean;
+  error: string | null;
   fetchProjects: () => Promise<void>;
   createProject: (data: ProjectCreate) => Promise<void>;
   setCurrentProject: (project: Project | null) => void;
@@ -10,71 +14,51 @@ interface ProjectContextType extends ProjectState {
 
 const ProjectContext = createContext<ProjectContextType | undefined>(undefined);
 
-type ProjectAction =
-  | { type: 'SET_LOADING'; payload: boolean }
-  | { type: 'SET_PROJECTS'; payload: Project[] }
-  | { type: 'SET_CURRENT_PROJECT'; payload: Project | null }
-  | { type: 'ADD_PROJECT'; payload: Project }
-  | { type: 'SET_ERROR'; payload: string | null };
-
-const initialState: ProjectState = {
-  projects: [],
-  currentProject: null,
-  isLoading: false,
-  error: null,
-};
-
-function projectReducer(state: ProjectState, action: ProjectAction): ProjectState {
-  switch (action.type) {
-    case 'SET_LOADING':
-      return { ...state, isLoading: action.payload };
-    case 'SET_PROJECTS':
-      return { ...state, projects: action.payload };
-    case 'SET_CURRENT_PROJECT':
-      return { ...state, currentProject: action.payload };
-    case 'ADD_PROJECT':
-      return { ...state, projects: [...state.projects, action.payload] };
-    case 'SET_ERROR':
-      return { ...state, error: action.payload };
-    default:
-      return state;
-  }
-}
-
 export function ProjectProvider({ children }: { children: React.ReactNode }) {
-  const [state, dispatch] = useReducer(projectReducer, initialState);
+  // Simple state hooks instead of complex reducer
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [currentProject, setCurrentProject] = useState<Project | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const fetchProjects = useCallback(async () => {
-    dispatch({ type: 'SET_LOADING', payload: true });
+  const fetchProjects = async () => {
+    setIsLoading(true);
+    setError(null);
     try {
       const projects = await projectAPI.getProjects();
-      dispatch({ type: 'SET_PROJECTS', payload: projects });
+      setProjects(projects);
     } catch (error) {
-      dispatch({ type: 'SET_ERROR', payload: 'Failed to fetch projects' });
+      setError('Failed to fetch projects');
     } finally {
-      dispatch({ type: 'SET_LOADING', payload: false });
+      setIsLoading(false);
     }
-  }, [dispatch]);
+  };
 
-  const createProject = useCallback(async (data: ProjectCreate) => {
-    dispatch({ type: 'SET_LOADING', payload: true });
+  const createProject = async (data: ProjectCreate) => {
+    setIsLoading(true);
+    setError(null);
     try {
-      const project = await projectAPI.createProject(data);
-      dispatch({ type: 'ADD_PROJECT', payload: project });
+      const response = await projectAPI.createProject(data);
+      const newProject = response.project; // API returns { project: ... }
+      setProjects(prev => [...prev, newProject]);
     } catch (error) {
-      dispatch({ type: 'SET_ERROR', payload: 'Failed to create project' });
+      setError('Failed to create project');
       throw error;
     } finally {
-      dispatch({ type: 'SET_LOADING', payload: false });
+      setIsLoading(false);
     }
-  }, [dispatch]);
-
-  const setCurrentProject = useCallback((project: Project | null) => {
-    dispatch({ type: 'SET_CURRENT_PROJECT', payload: project });
-  }, [dispatch]);
+  };
 
   return (
-    <ProjectContext.Provider value={{ ...state, fetchProjects, createProject, setCurrentProject }}>
+    <ProjectContext.Provider value={{ 
+      projects, 
+      currentProject, 
+      isLoading, 
+      error, 
+      fetchProjects, 
+      createProject, 
+      setCurrentProject 
+    }}>
       {children}
     </ProjectContext.Provider>
   );

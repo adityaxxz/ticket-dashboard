@@ -5,17 +5,12 @@ from .db import get_database, get_next_sequence, utc_now
 from .config import Config
 from .schemas import ProjectCreate, TicketCreate, TicketUpdate, SuperToggleRequest
 from fastapi.responses import JSONResponse
-from .notifications import WebSocketNotification, EmailNotification, CompositeNotification
+from .notifications import notify_activity as send_notification
 from .ws import log_user_visit
 
 
 def notify_activity(db, project_id: int, message: str, actor_email: str, ticket_id: int | None = None) -> None:
-    # Use a simple composite strategy: WebSocket + Email
-    notifier = CompositeNotification([
-        WebSocketNotification(),
-        EmailNotification(),
-    ])
-    notifier.send(db, project_id=int(project_id), message=message, actor_email=actor_email, ticket_id=ticket_id)
+    send_notification(db, project_id, message, actor_email, ticket_id)
 
 router = APIRouter(prefix="/api", tags=["api"])
 
@@ -34,20 +29,18 @@ def create_project(data: ProjectCreate, user = Depends(get_current_user), db = D
         project = {"id": new_id, "name": data.name, "created_at": utc_now()}
         projects.insert_one(project)
         
-        # Add activity log
         activity = {
             "project_id": new_id,
-            "message": f"Project created: {data.name}",
+            "message": f"{user['email']} created a project: {data.name}",
             "actor_email": user["email"],
             "created_at": utc_now()
         }
         
         db["activities"].insert_one(activity.copy())
 
-        # Visit log
-        log_user_visit(int(user["id"]), str(new_id), "api_create_project")
+        log_user_visit(int(user["id"]), str(new_id))
 
-        # Notify
+        
         notify_activity(db, project_id=int(new_id), message=activity["message"], actor_email=user["email"]) 
         
         return JSONResponse(status_code=201, content=jsonable_encoder({
@@ -87,6 +80,7 @@ def create_ticket(data: TicketCreate, user = Depends(get_current_user), db = Dep
         if not project:
             raise HTTPException(status_code=404, detail="Project not found")
         
+        user_email = user['email']
         new_id = get_next_sequence(db, "tickets")
         ticket = {
             "id": new_id,
@@ -94,33 +88,34 @@ def create_ticket(data: TicketCreate, user = Depends(get_current_user), db = Dep
             "description": data.description,
             "status": "todo",
             "creator_id": int(user["id"]),
+            "creator_email": user["email"],  
             "updated_by_id": int(user["id"]),
+            "updated_by_email": user_email,  
             "created_at": utc_now(),
             "updated_at": utc_now(),
         }
         db["tickets"].insert_one(ticket.copy())
         
-        # Add activity log
+        
         activity = {
             "project_id": data.project_id,
             "ticket_id": new_id,
-            "message": "Ticket Raised",
-            "actor_email": user["email"],
+            "message": user_email + " raised a ticket",
+            "actor_email": user_email,
             "created_at": utc_now(),
         }
         db["activities"].insert_one(activity.copy())
-
-        # Visit log
-        log_user_visit(int(user["id"]), str(data.project_id), "api_create_ticket")
-
-        # Notify
+        
+        log_user_visit(int(user["id"]), str(data.project_id))
+        
         notify_activity(db, project_id=int(data.project_id), message=activity["message"], actor_email=user["email"], ticket_id=int(new_id))
 
         return JSONResponse(
             status_code=201,
             content=jsonable_encoder({
                 "message": "Ticket Raised",
-                "ticket": ticket
+                
+                "ticket": {**ticket, "actor_email": user["email"]}
             })
         )
         
@@ -136,11 +131,16 @@ def update_ticket(ticket_id: int, data: TicketUpdate, user = Depends(get_current
     if not ticket:
         raise HTTPException(status_code=404, detail="Ticket not found")
     
-    # Update fields if provided
+    
     update_fields = {}
     if data.description is not None:
         update_fields["description"] = data.description
     
+    old_status = ticket['status']
+    new_status = data.status
+    id = ticket['id']
+    updated_by = user['email']
+
     valid_status = ["todo", "deployed", "done", "inprogress","proposed"]
 
     if data.status is not None:
@@ -149,29 +149,30 @@ def update_ticket(ticket_id: int, data: TicketUpdate, user = Depends(get_current
         update_fields["status"] = data.status
     
     update_fields["updated_by_id"] = int(user["id"])
+    update_fields["updated_by_email"] = user["email"]  
     db["tickets"].update_one(
         {"id": ticket_id},
         {"$set": update_fields, "$currentDate": {"updated_at": True}},
     )
     
-    # Add activity log
+    
     activity = {
         "project_id": int(ticket["project_id"]),
         "ticket_id": ticket_id,
-        "message": "Ticket Updated",
+        "message": updated_by + " moved Ticket:" + str(id) + " from " + old_status + " to " + new_status,
         "actor_email": user["email"],
         "created_at": utc_now(),
     }
     db["activities"].insert_one(activity.copy())
 
-    # Visit log
-    log_user_visit(int(user["id"]), str(ticket["project_id"]), "api_update_ticket")
+    
+    log_user_visit(int(user["id"]), str(ticket["project_id"]))
 
-    # Notify
+    
     notify_activity(db, project_id=int(ticket["project_id"]), message=activity["message"], actor_email=user["email"], ticket_id=int(ticket_id))
 
+    
     ticket = db["tickets"].find_one({"id": ticket_id}, {"_id": 0})
-
     return ticket
 
 
@@ -189,9 +190,7 @@ def set_super_toggle(data: SuperToggleRequest, user = Depends(get_current_user),
     else:
         db["super_toggle"].update_one({}, {"$set": {"enabled": data.enable}, "$currentDate": {"updated_at": True}})
         enabled = data.enable
-
-    # Visit log
-    log_user_visit(int(user["id"]), None, "api_super_toggle")
+    
     return {"enabled": bool(enabled)}
 
 
@@ -201,19 +200,18 @@ def get_super_toggle(db = Depends(get_database)):
     return {"enabled": bool(toggle.get("enabled", False))}
 
 
-# Activities listing endpoints
+
 @router.get("/activities")
 def list_activities(limit: int = 20, db = Depends(get_database), user = Depends(get_current_user)):
-    # Log visit
-    log_user_visit(int(user["id"]), None, "api_list_activities")
+    # No visit logging needed for activities list (not project-specific)
     items = list(db["activities"].find({}, {"_id": 0}).sort("created_at", -1).limit(int(limit)))
     return items
 
 
 @router.get("/projects/{project_id}/activities")
 def list_project_activities(project_id: int, limit: int = 20, db = Depends(get_database), user = Depends(get_current_user)):
-    # Log visit
-    log_user_visit(int(user["id"]), str(project_id), "api_list_project_activities")
+    
+    log_user_visit(int(user["id"]), str(project_id))
     items = list(
         db["activities"].find({"project_id": int(project_id)}, {"_id": 0}).sort("created_at", -1).limit(int(limit))
     )

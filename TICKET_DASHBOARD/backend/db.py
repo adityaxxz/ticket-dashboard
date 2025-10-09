@@ -1,7 +1,6 @@
 from pymongo.mongo_client import MongoClient
 from pymongo.server_api import ServerApi
 from pymongo import ReturnDocument
-from typing import Generator
 from datetime import datetime, timezone
 from .config import Config
 
@@ -28,12 +27,8 @@ def init_db() -> None:
     client.admin.command("ping")
 
 
-def get_database() -> Generator:
-    db = get_db()
-    try:
-        yield db
-    finally:
-        pass
+def get_database():
+    return get_db()
 
 
 def get_next_sequence(db, name: str) -> int:
