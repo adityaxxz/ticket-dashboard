@@ -1,4 +1,4 @@
-// ===== CORE TYPES =====
+// CORE TYPES
 
 export interface User {
   id: number;
@@ -35,7 +35,7 @@ export interface Activity {
   created_at: string;
 }
 
-// ===== API REQUEST/RESPONSE TYPES =====
+// API REQUEST/RESPONSE TYPES
 
 export interface OTPRequest {
   email: string;
@@ -65,7 +65,7 @@ export interface SuperToggleRequest {
   password: string;
 }
 
-// ===== API RESPONSES =====
+// API RESPONSES
 
 export interface AuthResponse {
   token: string;
