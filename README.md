@@ -15,7 +15,7 @@ A full-stack ticket management system with real-time collaboration features. Bui
 
 ### Backend
 - FastAPI - Modern Python web framework
-- SQLite - Lightweight database with SQLAlchemy ORM
+- MongoDB - NoSQL Database
 - WebSockets - Real-time communication
 - Pydantic - Data validation and settings management
 - JWT - https - Token-based authentication
