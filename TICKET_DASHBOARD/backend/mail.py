@@ -2,7 +2,10 @@ from fastapi_mail import FastMail, MessageSchema, ConnectionConfig, MessageType
 from .config import Config
 from pathlib import Path
 from typing import List
+import logging
+import asyncio
 
+logger = logging.getLogger(__name__)
 BASE_DIR = Path(__file__).resolve().parent
 
 mail_config = ConnectionConfig(
@@ -16,6 +19,7 @@ mail_config = ConnectionConfig(
     MAIL_SSL_TLS=Config.MAIL_SSL_TLS,
     USE_CREDENTIALS=Config.USE_CREDENTIALS,
     VALIDATE_CERTS=Config.VALIDATE_CERTS,
+    SOCKET_TIMEOUT=30,
 )
 
 
