@@ -16,7 +16,7 @@ export default function ProjectDetailPage() {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  // Track connection implicitly; do not store state to avoid unused warnings
+  
 
   useEffect(() => {
     if (projectId) {
@@ -42,14 +42,13 @@ export default function ProjectDetailPage() {
     }
   };
 
-  // Simple WebSocket: connect and listen for activity updates
   useEffect(() => {
     if (!projectId) return;
 
     const token = localStorage.getItem('token');
     if (!token) return;
 
-    // Simple WebSocket connection
+    // WebSocket connection
     const apiBase = import.meta.env.VITE_API_URL;
     const wsUrl = `${apiBase.replace('https://', 'wss://').replace('http://', 'ws://')}/ws/activity?token=${token}&project_id=${projectId}`;
     const ws = new WebSocket(wsUrl);
@@ -58,15 +57,11 @@ export default function ProjectDetailPage() {
       try {
         const data = JSON.parse(event.data);
         if (data.event === 'activity' && data.data?.project_id == projectId) {
-          // Simple refresh without debouncing - WebSocket messages are already infrequent
           fetchProjectDetails();
         }
-      } catch {
-        // Ignore parse errors
-      }
+      } catch {}
     };
 
-    // Simple cleanup
     return () => {
       ws.close();
     };

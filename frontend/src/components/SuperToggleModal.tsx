@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useSuperToggle } from '../contexts/SuperToggleContext';
-// Removed SuperToggleFormData - using inline type instead
 
 interface SuperToggleModalProps {
   isOpen: boolean;

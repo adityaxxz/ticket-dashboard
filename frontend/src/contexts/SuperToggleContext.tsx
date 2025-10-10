@@ -13,7 +13,7 @@ interface SuperToggleContextType {
 const SuperToggleContext = createContext<SuperToggleContextType | undefined>(undefined);
 
 export function SuperToggleProvider({ children }: { children: React.ReactNode }) {
-  // Simple state hooks instead of complex reducer
+
   const [enabled, setEnabled] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

@@ -12,7 +12,6 @@ def get_mongo_client() -> MongoClient:
     global mongodb_client
 
     if mongodb_client is None:
-        # Base MongoDB client options
         client_options = {
             "server_api": ServerApi("1"),
             "serverSelectionTimeoutMS": 30000,
@@ -20,14 +19,12 @@ def get_mongo_client() -> MongoClient:
             "socketTimeoutMS": 30000,
         }
         
-        # Add SSL configuration if enabled (default for production)
         if Config.MONGO_SSL_ENABLED:
             client_options.update({
                 "tls": True,
                 "tlsAllowInvalidCertificates": Config.MONGO_TLS_ALLOW_INVALID_CERTIFICATES,
             })
         
-        # MongoDB client with configurable SSL settings
         mongodb_client = MongoClient(Config.DATABASE_URL, **client_options)
         
     return mongodb_client
@@ -41,7 +38,6 @@ def get_db():
 def init_db() -> None:
     try:
         client = get_mongo_client()
-        # Test connection with timeout
         client.admin.command("ping")
         print("✅ MongoDB connection successful")
     except Exception as e:

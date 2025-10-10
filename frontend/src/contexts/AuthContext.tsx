@@ -61,7 +61,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const isAuthenticated = !!user;
 
-  // Simple effect to check existing token
+
   useEffect(() => {
     const storedToken = localStorage.getItem('token');
     if (storedToken) {

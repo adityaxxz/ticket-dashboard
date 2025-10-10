@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useProjects } from '../contexts/ProjectContext';
-// Removed ProjectFormData - using inline type instead
 
 export default function ProjectListPage() {
   const { projects, fetchProjects, createProject, isLoading } = useProjects();
@@ -12,7 +11,7 @@ export default function ProjectListPage() {
 
   useEffect(() => {
     fetchProjects();
-  }, []); // Only run on mount - simpler for beginners
+  }, []);
 
   const handleCreateProject = async (e: React.FormEvent) => {
     e.preventDefault();
