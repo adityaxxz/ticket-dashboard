@@ -4,9 +4,7 @@ A full-stack ticket management system with real-time collaboration features. Bui
 
 ## Demo Video
 
-<a href="https://raw.githubusercontent.com/adityaxxz/ticket-dashboard/main/video.mp4">
-  <img src="https://raw.githubusercontent.com/adityaxxz/ticket-dashboard/main/thumb.png" alt="Watch Demo Video" width="400" height="300">
-</a>
+[![demo video](https://raw.githubusercontent.com/adityaxxz/ticket-dashboard/main/thumb.png)](https://drive.google.com/file/d/1OgIPNkVw0fyaPDgu-VOZTLTAP71d5M5z/view)
 
 ## Features 
 
