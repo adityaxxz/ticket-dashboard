@@ -2,15 +2,11 @@
 
 A full-stack ticket management system with real-time collaboration features. Built with FastAPI backend and React frontend, providing a Kanban-style interface for managing projects and tickets.
 
-<details>
-<summary><u><b>Demo Video</b></u></summary>
+## Demo Video
 
-<video width="100%" controls>
-  <source src="./video.mp4" type="video/mp4">
-  Your browser does not support the video tag.
-</video>
-
-</details>
+<a href="https://raw.githubusercontent.com/adityaxxz/ticket-dashboard/main/video.mp4">
+  <img src="https://raw.githubusercontent.com/adityaxxz/ticket-dashboard/main/thumb.png" alt="Watch Demo Video" width="400" height="300">
+</a>
 
 ## Features 
 
