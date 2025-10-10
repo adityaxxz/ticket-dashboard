@@ -3,7 +3,6 @@ from pymongo.server_api import ServerApi
 from pymongo import ReturnDocument
 from datetime import datetime, timezone
 from .config import Config
-import ssl
 
 
 mongodb_client: MongoClient | None = None
@@ -23,16 +22,10 @@ def get_mongo_client() -> MongoClient:
         
         # Add SSL configuration if enabled (default for production)
         if Config.MONGO_SSL_ENABLED:
-            # Create SSL context for MongoDB Atlas
-            ssl_context = ssl.create_default_context()
-            ssl_context.check_hostname = False
-            ssl_context.verify_mode = ssl.CERT_NONE
-            
             client_options.update({
-                "ssl": True,
-                "ssl_cert_reqs": ssl.CERT_NONE,
-                "ssl_match_hostname": False,
+                "tls": True,
                 "tlsAllowInvalidCertificates": Config.MONGO_TLS_ALLOW_INVALID_CERTIFICATES,
+                "tlsInsecure": True,  # This disables certificate validation
             })
         
         # MongoDB client with configurable SSL settings
