@@ -39,9 +39,9 @@ A full-stack ticket management system with real-time collaboration features. Bui
 ## Setup and Installation
 
 ### Prerequisites
+- Python
+- Node
 - Docker and Docker Compose
-- Node.js 18+
-- Python 3.11+
 - uv (install via pip) - Ive used uv coz its rust based and 100x faster than pip
 
 
@@ -71,13 +71,13 @@ npm run dev
    docker-compose up -d
    ```
 3. Access the application:
-   - Frontend: http://localhost:3000
+   - Frontend: http://localhost:5173
    - Backend API: http://localhost:8000
    - API Docs: http://localhost:8000/docs
 
 ## Usage
 
-1. Access the application at http://localhost:3000
+1. Access the application at http://localhost:5173
 2. Login with any email address
 3. Check logs for OTP code (development mode)
 4. Create projects and manage tickets through the Kanban interface
@@ -89,18 +89,20 @@ npm run dev
 
 #### Backend (`TICKET_DASHBOARD/.env`)
 ```env
-DATABASE_URL= MongoDB URL or sqlite:///./data/database.db
-JWT_SECRET=your-secret-key-change-this-in-production
+DATABASE_URL= MongoDB URL starts with mongodb+srv://
+JWT_SECRET= your-secret-key
 SUPER_TOGGLE_PWD=admin123
-SMTP_SERVER=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USERNAME=your-email@gmail.com
-SMTP_PASSWORD=your-app-password
+MONGO_DB_NAME=ticket_dashboard
+SUPER_TOGGLE_PWD=admin123
+MAIL_USERNAME=sender_email
+MAIL_PASSWORD=get_from_smtp_provider
+MAIL_FROM=sender_email
 ```
 
 #### Frontend (`frontend/.env`)
 ```env
 VITE_API_URL=http://localhost:8000
+change this to backend deployed url
 ```
 
 
