@@ -50,7 +50,8 @@ export default function ProjectDetailPage() {
     if (!token) return;
 
     // Simple WebSocket connection
-    const wsUrl = `ws://localhost:8000/ws/activity?token=${token}&project_id=${projectId}`;
+    const apiBase = import.meta.env.VITE_API_URL;
+    const wsUrl = `${apiBase.replace('https://', 'wss://').replace('http://', 'ws://')}/ws/activity?token=${token}&project_id=${projectId}`;
     const ws = new WebSocket(wsUrl);
 
     ws.onmessage = (event) => {

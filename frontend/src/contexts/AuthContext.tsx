@@ -1,8 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { User, OTPRequest, OTPVerify } from '../types';
 
-// Simple API functions - no complex axios client needed
-const API_BASE = 'http://localhost:8000';
+const API_BASE = import.meta.env.VITE_API_URL;
 const getAuthHeaders = () => {
   const token = localStorage.getItem('token');
   return {
