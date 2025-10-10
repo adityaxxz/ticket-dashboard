@@ -37,7 +37,24 @@ class Settings(BaseSettings):
     USE_CREDENTIALS: bool = os.getenv("USE_CREDENTIALS", "true").lower() == "true"
     VALIDATE_CERTS: bool = os.getenv("VALIDATE_CERTS", "true").lower() == "true"
     DOMAIN: str = os.getenv("DOMAIN", "localhost:8000")
-
+    
+    def model_post_init(self, __context):
+        """Debug and validate email configuration"""
+        print(f"🔧 EMAIL CONFIG DEBUG:")
+        print(f"   MAIL_USERNAME: {self.MAIL_USERNAME}")
+        print(f"   MAIL_SERVER: {self.MAIL_SERVER}")
+        print(f"   MAIL_PORT: {self.MAIL_PORT}")
+        print(f"   MAIL_FROM: {self.MAIL_FROM}")
+        print(f"   MAIL_STARTTLS: {self.MAIL_STARTTLS}")
+        print(f"   MAIL_SSL_TLS: {self.MAIL_SSL_TLS}")
+        print(f"   MAIL_PASSWORD set: {'Yes' if self.MAIL_PASSWORD.get_secret_value() else 'No'}")
+        print(f"🔧 END DEBUG")
+        
+        # Validate critical settings
+        if not self.MAIL_PASSWORD.get_secret_value():
+            print("⚠️  WARNING: MAIL_PASSWORD is empty!")
+        if not self.MAIL_FROM:
+            print("⚠️  WARNING: MAIL_FROM is empty!")
 
     model_config = SettingsConfigDict(
         env_file=DOTENV_PATH,
