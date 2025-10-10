@@ -25,7 +25,6 @@ def get_mongo_client() -> MongoClient:
             client_options.update({
                 "tls": True,
                 "tlsAllowInvalidCertificates": Config.MONGO_TLS_ALLOW_INVALID_CERTIFICATES,
-                "tlsInsecure": True,  # This disables certificate validation
             })
         
         # MongoDB client with configurable SSL settings
@@ -40,8 +39,14 @@ def get_db():
 
 
 def init_db() -> None:
-    client = get_mongo_client()
-    client.admin.command("ping")
+    try:
+        client = get_mongo_client()
+        # Test connection with timeout
+        client.admin.command("ping")
+        print("✅ MongoDB connection successful")
+    except Exception as e:
+        print(f"❌ MongoDB connection failed: {e}")
+        raise RuntimeError(f"Failed to connect to MongoDB: {e}")
 
 
 def get_database():

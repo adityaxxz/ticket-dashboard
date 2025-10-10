@@ -24,6 +24,18 @@ class Settings(BaseSettings):
     JWT_SECRET: str = os.getenv("JWT_SECRET") or ""
     JWT_ALG: str = "HS256"
     JWT_TTL_SECONDS: int = 60 * 60 * 24 * 7
+    
+    def model_post_init(self, __context):
+        """Validate critical environment variables"""
+        if self.ENVIRONMENT == "production":
+            if not self.DATABASE_URL:
+                raise ValueError("DATABASE_URL is required in production")
+            if not self.JWT_SECRET:
+                raise ValueError("JWT_SECRET is required in production")
+            if not self.MAIL_USERNAME:
+                raise ValueError("MAIL_USERNAME is required for email functionality")
+            if not self.MAIL_PASSWORD.get_secret_value():
+                raise ValueError("MAIL_PASSWORD is required for email functionality")
 
     # Mail configuration
     MAIL_USERNAME: str = os.getenv("MAIL_USERNAME") or ""

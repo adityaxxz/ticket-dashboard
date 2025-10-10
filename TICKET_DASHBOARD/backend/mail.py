@@ -7,16 +7,15 @@ BASE_DIR = Path(__file__).resolve().parent
 
 mail_config = ConnectionConfig(
     MAIL_USERNAME=Config.MAIL_USERNAME,
-    MAIL_PASSWORD=Config.MAIL_PASSWORD.get_secret_value() if hasattr(Config.MAIL_PASSWORD, "get_secret_value") else Config.MAIL_PASSWORD,
+    MAIL_PASSWORD=Config.MAIL_PASSWORD.get_secret_value(),
     MAIL_FROM=Config.MAIL_FROM,
-    MAIL_PORT=587,
+    MAIL_PORT=Config.MAIL_PORT,
     MAIL_SERVER=Config.MAIL_SERVER,
     MAIL_FROM_NAME=Config.MAIL_FROM_NAME,
-    MAIL_STARTTLS=True,
-    MAIL_SSL_TLS=False,
-    USE_CREDENTIALS=True,
-    VALIDATE_CERTS=True,
-    # TEMPLATE_FOLDER=Path(BASE_DIR, "templates"),
+    MAIL_STARTTLS=Config.MAIL_STARTTLS,
+    MAIL_SSL_TLS=Config.MAIL_SSL_TLS,
+    USE_CREDENTIALS=Config.USE_CREDENTIALS,
+    VALIDATE_CERTS=Config.VALIDATE_CERTS,
 )
 
 
