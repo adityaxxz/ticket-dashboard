@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { SuperToggleRequest } from '../types';
 import { superToggleAPI } from '../services/api';
+import { useAuth } from './AuthContext';
 
 interface SuperToggleContextType {
   enabled: boolean;
@@ -13,14 +14,20 @@ interface SuperToggleContextType {
 const SuperToggleContext = createContext<SuperToggleContextType | undefined>(undefined);
 
 export function SuperToggleProvider({ children }: { children: React.ReactNode }) {
-
+  const { isAuthenticated } = useAuth();
   const [enabled, setEnabled] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchSuperToggle();
-  }, []);
+    if (isAuthenticated) {
+      fetchSuperToggle();
+    } else {
+      // Reset super toggle state when user is not authenticated
+      setEnabled(false);
+      setError(null);
+    }
+  }, [isAuthenticated]);
 
   const fetchSuperToggle = async () => {
     setIsLoading(true);

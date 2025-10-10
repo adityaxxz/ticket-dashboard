@@ -84,3 +84,12 @@ def get_current_user_info(user = Depends(get_current_user)):
         "email": user["email"],
         "created_at": user.get("created_at"),
     }
+
+
+@router.post("/logout")
+def logout_user(user = Depends(get_current_user), db = Depends(get_database)):
+    user_id = int(user["id"])
+    
+    db["user_super_toggle"].delete_one({"user_id": user_id})
+    
+    return {"message": "Logged out successfully"}

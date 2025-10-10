@@ -37,6 +37,15 @@ const authAPI = {
     });
     if (!response.ok) throw new Error('Failed to get user info');
     return response.json();
+  },
+
+  logout: async () => {
+    const response = await fetch(`${API_BASE}/auth/logout`, {
+      method: 'POST',
+      headers: getAuthHeaders()
+    });
+    if (!response.ok) throw new Error('Failed to logout');
+    return response.json();
   }
 };
 
@@ -108,11 +117,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem('token');
-    setToken(null);
-    setUser(null);
-    setError(null);
+  const logout = async () => {
+    try {
+      // Call backend logout to clear super toggle state
+      await authAPI.logout();
+    } catch (error) {
+      // Continue with logout even if backend call fails
+      console.warn('Backend logout failed:', error);
+    } finally {
+      // Always clear frontend state
+      localStorage.removeItem('token');
+      setToken(null);
+      setUser(null);
+      setError(null);
+    }
   };
 
   return (

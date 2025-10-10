@@ -183,20 +183,31 @@ def set_super_toggle(data: SuperToggleRequest, user = Depends(get_current_user),
     if data.enable and data.password != Config.SUPER_TOGGLE_PWD:
         raise HTTPException(status_code=403, detail="Invalid password")
     
-    toggle = db["super_toggle"].find_one({}, {"_id": 0})
+    user_id = int(user["id"])
+
+    toggle = db["user_super_toggle"].find_one({"user_id": user_id}, {"_id": 0})
     if not toggle:
-        db["super_toggle"].insert_one({"enabled": data.enable, "updated_at": utc_now()})
+        db["user_super_toggle"].insert_one({
+            "user_id": user_id, 
+            "enabled": data.enable, 
+            "updated_at": utc_now()
+        })
         enabled = data.enable
     else:
-        db["super_toggle"].update_one({}, {"$set": {"enabled": data.enable}, "$currentDate": {"updated_at": True}})
+        db["user_super_toggle"].update_one(
+            {"user_id": user_id}, 
+            {"$set": {"enabled": data.enable}, "$currentDate": {"updated_at": True}}
+        )
         enabled = data.enable
     
     return {"enabled": bool(enabled)}
 
 
 @router.get("/super-toggle")
-def get_super_toggle(db = Depends(get_database)):
-    toggle = db["super_toggle"].find_one({}, {"_id": 0}) or {}
+def get_super_toggle(user = Depends(get_current_user), db = Depends(get_database)):
+    user_id = int(user["id"])
+    
+    toggle = db["user_super_toggle"].find_one({"user_id": user_id}, {"_id": 0}) or {}
     return {"enabled": bool(toggle.get("enabled", False))}
 
 
