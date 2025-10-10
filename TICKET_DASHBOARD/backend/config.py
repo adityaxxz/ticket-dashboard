@@ -11,6 +11,13 @@ load_dotenv(DOTENV_PATH)
 class Settings(BaseSettings):
     DATABASE_URL: str = os.getenv("DATABASE_URL") or ""
     MONGO_DB_NAME: str = os.getenv("MONGO_DB_NAME") or "ticket_dashboard"
+    
+    # Environment settings
+    ENVIRONMENT: str = os.getenv("ENVIRONMENT") or "development"
+    
+    # MongoDB SSL settings
+    MONGO_SSL_ENABLED: bool = os.getenv("MONGO_SSL_ENABLED", "true").lower() == "true"
+    MONGO_TLS_ALLOW_INVALID_CERTIFICATES: bool = os.getenv("MONGO_TLS_ALLOW_INVALID_CERTIFICATES", "true").lower() == "true"
 
     SUPER_TOGGLE_PWD: str = os.getenv("SUPER_TOGGLE_PWD") or "admin123"
     
