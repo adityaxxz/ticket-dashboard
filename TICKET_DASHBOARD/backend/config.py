@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     # Mail configuration
     MAIL_USERNAME: str = os.getenv("MAIL_USERNAME") or ""
     MAIL_PASSWORD: SecretStr = SecretStr(os.getenv("MAIL_PASSWORD") or "")
-    MAIL_FROM: str = os.getenv("MAIL_FROM") or ""
+    MAIL_FROM: str = os.getenv("MAIL_FROM") or "adityaranjanvanced@gmail.com"
     MAIL_PORT: int = 587
     MAIL_SERVER: str = "smtp.gmail.com"
     MAIL_FROM_NAME: str = "Admin@Ticket-Dashboard"
