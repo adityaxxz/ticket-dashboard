@@ -24,37 +24,32 @@ class Settings(BaseSettings):
     JWT_SECRET: str = os.getenv("JWT_SECRET") or ""
     JWT_ALG: str = "HS256"
     JWT_TTL_SECONDS: int = 60 * 60 * 24 * 7
-
-    # Mail configuration - Resend SMTP
-    MAIL_USERNAME: str = os.getenv("MAIL_USERNAME", "resend")  # Resend uses fixed username
-    MAIL_PASSWORD: SecretStr = SecretStr(os.getenv("MAIL_PASSWORD") or "")  # Resend API key
-    MAIL_FROM: str = os.getenv("MAIL_FROM") or "adityaranjanvanced@gmail.com"
-    MAIL_PORT: int = int(os.getenv("MAIL_PORT", "587"))
-    MAIL_SERVER: str = os.getenv("MAIL_SERVER", "smtp.resend.com")  # Resend SMTP
-    MAIL_FROM_NAME: str = os.getenv("MAIL_FROM_NAME", "TicketDashboard")
-    MAIL_STARTTLS: bool = os.getenv("MAIL_STARTTLS", "true").lower() == "true"
-    MAIL_SSL_TLS: bool = os.getenv("MAIL_SSL_TLS", "false").lower() == "true"
-    USE_CREDENTIALS: bool = os.getenv("USE_CREDENTIALS", "true").lower() == "true"
-    VALIDATE_CERTS: bool = os.getenv("VALIDATE_CERTS", "true").lower() == "true"
-    DOMAIN: str = os.getenv("DOMAIN", "localhost:8000")
     
     def model_post_init(self, __context):
-        """Debug and validate email configuration"""
-        print(f"🔧 EMAIL CONFIG DEBUG:")
-        print(f"   MAIL_USERNAME: {self.MAIL_USERNAME}")
-        print(f"   MAIL_SERVER: {self.MAIL_SERVER}")
-        print(f"   MAIL_PORT: {self.MAIL_PORT}")
-        print(f"   MAIL_FROM: {self.MAIL_FROM}")
-        print(f"   MAIL_STARTTLS: {self.MAIL_STARTTLS}")
-        print(f"   MAIL_SSL_TLS: {self.MAIL_SSL_TLS}")
-        print(f"   MAIL_PASSWORD set: {'Yes' if self.MAIL_PASSWORD.get_secret_value() else 'No'}")
-        print(f"🔧 END DEBUG")
-        
-        # Validate critical settings
-        if not self.MAIL_PASSWORD.get_secret_value():
-            print("⚠️  WARNING: MAIL_PASSWORD is empty!")
-        if not self.MAIL_FROM:
-            print("⚠️  WARNING: MAIL_FROM is empty!")
+        """Validate critical environment variables"""
+        if self.ENVIRONMENT == "production":
+            if not self.DATABASE_URL:
+                raise ValueError("DATABASE_URL is required in production")
+            if not self.JWT_SECRET:
+                raise ValueError("JWT_SECRET is required in production")
+            if not self.MAIL_USERNAME:
+                raise ValueError("MAIL_USERNAME is required for email functionality")
+            if not self.MAIL_PASSWORD.get_secret_value():
+                raise ValueError("MAIL_PASSWORD is required for email functionality")
+
+    # Mail configuration
+    MAIL_USERNAME: str = os.getenv("MAIL_USERNAME") or ""
+    MAIL_PASSWORD: SecretStr = SecretStr(os.getenv("MAIL_PASSWORD") or "")
+    MAIL_FROM: str = os.getenv("MAIL_FROM") or "adityaranjanvanced@gmail.com"
+    MAIL_PORT: int = 587
+    MAIL_SERVER: str = "smtp.gmail.com"
+    MAIL_FROM_NAME: str = "Admin@Ticket-Dashboard"
+    MAIL_STARTTLS: bool = True
+    MAIL_SSL_TLS: bool = False
+    USE_CREDENTIALS: bool = True
+    VALIDATE_CERTS: bool = True
+    DOMAIN: str = "localhost:8000"
+
 
     model_config = SettingsConfigDict(
         env_file=DOTENV_PATH,
