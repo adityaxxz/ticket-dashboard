@@ -25,13 +25,13 @@ class Settings(BaseSettings):
     JWT_ALG: str = "HS256"
     JWT_TTL_SECONDS: int = 60 * 60 * 24 * 7
 
-    # Mail configuration- Brevo SMTP
-    MAIL_USERNAME: str = os.getenv("MAIL_USERNAME") or ""
-    MAIL_PASSWORD: SecretStr = SecretStr(os.getenv("MAIL_PASSWORD") or "")
+    # Mail configuration - Resend SMTP
+    MAIL_USERNAME: str = os.getenv("MAIL_USERNAME", "resend")  # Resend uses fixed username
+    MAIL_PASSWORD: SecretStr = SecretStr(os.getenv("MAIL_PASSWORD") or "")  # Resend API key
     MAIL_FROM: str = os.getenv("MAIL_FROM") or "adityaranjanvanced@gmail.com"
     MAIL_PORT: int = int(os.getenv("MAIL_PORT", "587"))
-    MAIL_SERVER: str = os.getenv("MAIL_SERVER", "smtp-relay.brevo.com")  # Brevo SMTP
-    MAIL_FROM_NAME: str = os.getenv("MAIL_FROM_NAME", "Ticket Dashboard")
+    MAIL_SERVER: str = os.getenv("MAIL_SERVER", "smtp.resend.com")  # Resend SMTP
+    MAIL_FROM_NAME: str = os.getenv("MAIL_FROM_NAME", "TicketDashboard")
     MAIL_STARTTLS: bool = os.getenv("MAIL_STARTTLS", "true").lower() == "true"
     MAIL_SSL_TLS: bool = os.getenv("MAIL_SSL_TLS", "false").lower() == "true"
     USE_CREDENTIALS: bool = os.getenv("USE_CREDENTIALS", "true").lower() == "true"
