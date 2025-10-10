@@ -9,7 +9,6 @@ resend.api_key = Config.MAIL_PASSWORD.get_secret_value()
 
 
 async def send_html_email(recipients: List[str], subject: str, body: str):
-    """Send HTML email using Resend API"""
     try:
         response = resend.Emails.send({
             "from": Config.MAIL_FROM,

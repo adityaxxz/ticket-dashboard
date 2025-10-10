@@ -4,9 +4,9 @@ from pathlib import Path
 from dotenv import load_dotenv
 import os
 
-
 DOTENV_PATH = Path(__file__).resolve().parent / ".env"
 load_dotenv(DOTENV_PATH)
+
 
 class Settings(BaseSettings):
     DATABASE_URL: str = os.getenv("DATABASE_URL") or ""
@@ -26,15 +26,12 @@ class Settings(BaseSettings):
     # Mail configuration (Resend SMTP)
     MAIL_USERNAME: str = os.getenv("MAIL_USERNAME") or "resend"
     MAIL_PASSWORD: SecretStr = SecretStr(os.getenv("MAIL_PASSWORD") or "")
-    MAIL_FROM: str = os.getenv("MAIL_FROM") or "no-reply@0xadra.site"
+    MAIL_FROM: str = os.getenv("MAIL_FROM") or "Admin@Ticket-Dashboard@0xadra.site"
     MAIL_PORT: int = 587
     MAIL_SERVER: str = "smtp.resend.dev"
     MAIL_FROM_NAME: str = "Admin@Ticket-Dashboard"
     MAIL_STARTTLS: bool = True
     MAIL_SSL_TLS: bool = False
-    USE_CREDENTIALS: bool = True
-    VALIDATE_CERTS: bool = True
-    DOMAIN: str = "localhost:8000"
 
 
     model_config = SettingsConfigDict(
