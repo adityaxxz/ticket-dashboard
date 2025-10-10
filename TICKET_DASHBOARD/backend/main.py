@@ -25,6 +25,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.get("/")
+async def health_check():
+    """Health check endpoint for Render.com"""
+    return {"status": "healthy", "message": "Ticket Dashboard API is running"}
+
+@app.get("/health")
+async def health():
+    """Additional health check endpoint"""
+    return {"status": "ok"}
+
 app.include_router(auth_router)
 app.include_router(api_router)
 app.include_router(ws_router)
