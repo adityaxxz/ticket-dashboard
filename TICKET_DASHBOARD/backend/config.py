@@ -12,10 +12,8 @@ class Settings(BaseSettings):
     DATABASE_URL: str = os.getenv("DATABASE_URL") or ""
     MONGO_DB_NAME: str = os.getenv("MONGO_DB_NAME") or "ticket_dashboard"
     
-    # Environment settings
     ENVIRONMENT: str = os.getenv("ENVIRONMENT") or "development"
     
-    # MongoDB SSL settings
     MONGO_SSL_ENABLED: bool = os.getenv("MONGO_SSL_ENABLED", "true").lower() == "true"
     MONGO_TLS_ALLOW_INVALID_CERTIFICATES: bool = os.getenv("MONGO_TLS_ALLOW_INVALID_CERTIFICATES", "true").lower() == "true"
 
@@ -25,12 +23,12 @@ class Settings(BaseSettings):
     JWT_ALG: str = "HS256"
     JWT_TTL_SECONDS: int = 60 * 60 * 24 * 7
 
-    # Mail configuration
-    MAIL_USERNAME: str = os.getenv("MAIL_USERNAME") or ""
+    # Mail configuration (Resend SMTP)
+    MAIL_USERNAME: str = os.getenv("MAIL_USERNAME") or "resend"
     MAIL_PASSWORD: SecretStr = SecretStr(os.getenv("MAIL_PASSWORD") or "")
-    MAIL_FROM: str = os.getenv("MAIL_FROM") or "adityaranjanvanced@gmail.com"
+    MAIL_FROM: str = os.getenv("MAIL_FROM") or "no-reply@0xadra.site"
     MAIL_PORT: int = 587
-    MAIL_SERVER: str = "smtp.gmail.com"
+    MAIL_SERVER: str = "smtp.resend.dev"
     MAIL_FROM_NAME: str = "Admin@Ticket-Dashboard"
     MAIL_STARTTLS: bool = True
     MAIL_SSL_TLS: bool = False
