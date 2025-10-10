@@ -2,7 +2,17 @@
 
 A full-stack ticket management system with real-time collaboration features. Built with FastAPI backend and React frontend, providing a Kanban-style interface for managing projects and tickets.
 
-## Features
+<details>
+<summary><u><b>Demo Video</b></u></summary>
+
+<video width="100%" controls>
+  <source src="./video.mp4" type="video/mp4">
+  Your browser does not support the video tag.
+</video>
+
+</details>
+
+## Features 
 
 - Email-based OTP authentication with JWT tokens
 - Project creation and management
