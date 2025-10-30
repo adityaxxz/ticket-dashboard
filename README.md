@@ -32,8 +32,11 @@ https://github.com/user-attachments/assets/587e5018-16c1-4c00-a04d-aba0c664812a
 - React Router for Client-side routing
 
 ### DevOps
-- **Docker** - Containerization
-- **Docker Compose** - Multi-container orchestration  
+- **Docker** - Containerization with published images on Docker Hub
+- **Docker Compose** - Multi-container orchestration
+- **Published Images:**
+  - `yourusername/ticket-dashboard-backend:latest`
+  - `yourusername/ticket-dashboard-frontend:latest`  
 
 
 ## Setup and Installation
@@ -65,19 +68,44 @@ npm run dev
 
 ### Docker Setup (Recommended)
 
-1. Clone the repository and navigate to project directory
-2. Start all services:
+#### Quick Start with Published Images
+
+1. **Download the production docker-compose file:**
    ```bash
-   docker-compose up -d
+   curl -o docker-compose.yml https://raw.githubusercontent.com/adityaxxz/ticket-dashboard/main/docker-compose.prod.yml
    ```
-3. Access the application:
-   - Frontend: http://localhost:5173
+
+2. **Start the application:**
+   ```bash
+   docker compose up
+   ```
+
+3. **Access the application:**
+   - Frontend: http://localhost:3000
    - Backend API: http://localhost:8000
    - API Docs: http://localhost:8000/docs
 
+#### Alternative: Pull Images Manually
+
+```bash
+# Pull the images
+docker pull adityaxxz/ticket-dashboard-backend:latest
+docker pull adityaxxz/ticket-dashboard-frontend:latest
+
+# Run with docker compose
+docker compose up
+```
+
+#### Build from Source
+
+1. **Clone the Repo & Build and start all services:**
+   ```bash
+   docker compose up --build
+   ```
+
 ## Usage
 
-1. Access the application at http://localhost:5173
+1. Access the application at http://localhost:3000
 2. Login with any email address
 3. Check logs for OTP code (development mode)
 4. Create projects and manage tickets through the Kanban interface

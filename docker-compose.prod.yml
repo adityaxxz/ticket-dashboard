@@ -1,0 +1,24 @@
+services:
+  backend:
+    image: adityaxxz/ticket-dashboard-backend:latest
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+    environment:
+      - PYTHONPATH=/app
+    networks:
+      - ticket-network
+
+  frontend:
+    image: adityaxxz/ticket-dashboard-frontend:latest
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - ticket-network
+
+networks:
+  ticket-network:
+    driver: bridge
