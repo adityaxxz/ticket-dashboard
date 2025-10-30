@@ -35,8 +35,8 @@ https://github.com/user-attachments/assets/587e5018-16c1-4c00-a04d-aba0c664812a
 - **Docker** - Containerization with published images on Docker Hub
 - **Docker Compose** - Multi-container orchestration
 - **Published Images:**
-  - `yourusername/ticket-dashboard-backend:latest`
-  - `yourusername/ticket-dashboard-frontend:latest`  
+  - `https://hub.docker.com/r/adityaxxz/ticket-dashboard-frontend`
+  - `https://hub.docker.com/r/adityaxxz/ticket-dashboard-backend`  
 
 
 ## Setup and Installation
