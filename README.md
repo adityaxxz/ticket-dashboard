@@ -21,20 +21,20 @@ https://github.com/user-attachments/assets/587e5018-16c1-4c00-a04d-aba0c664812a
 - FastAPI - Modern Python web framework
 - MongoDB - NoSQL Database
 - WebSockets - Real-time communication
+- JWT Token-based authentication
 - Pydantic - Data validation and settings management
-- JWT - https - Token-based authentication
 
 ### Frontend
-- React 19 - Modern UI library with latest features
-- TypeScript - Type-safe JavaScript
-- Vite - Fast build tool and dev server
-- TailwindCSS - Utility-first CSS framework
-- React Router - Client-side routing
+- React 19
+- TypeScript
+- Vite
+- TailwindCSS
+- React Router for Client-side routing
 
 ### DevOps
 - **Docker** - Containerization
 - **Docker Compose** - Multi-container orchestration  
-- **Nginx** - Production web server
+
 
 ## Setup and Installation
 
@@ -42,7 +42,7 @@ https://github.com/user-attachments/assets/587e5018-16c1-4c00-a04d-aba0c664812a
 - Python
 - Node
 - Docker and Docker Compose
-- uv (install via pip) - Ive used uv coz its rust based and 100x faster than pip
+- uv (install via pip) - I've used uv because, its rust based and 100x faster than pip.
 
 
 ### Local Development Setup
