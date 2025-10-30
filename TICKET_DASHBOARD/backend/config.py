@@ -26,7 +26,7 @@ class Settings(BaseSettings):
     # Mail configuration (Resend SMTP)
     MAIL_USERNAME: str = os.getenv("MAIL_USERNAME") or "resend"
     MAIL_PASSWORD: SecretStr = SecretStr(os.getenv("MAIL_PASSWORD") or "")
-    MAIL_FROM: str = os.getenv("MAIL_FROM") or "Admin@Ticket-Dashboard@0xadra.site"
+    MAIL_FROM: str = os.getenv("MAIL_FROM") or "admin@0xadra.site"
     MAIL_PORT: int = 587
     MAIL_SERVER: str = "smtp.resend.dev"
     MAIL_FROM_NAME: str = "Admin@Ticket-Dashboard"
